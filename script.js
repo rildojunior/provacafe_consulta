@@ -1,85 +1,117 @@
 /* =============================================
    CONSULTA DE LOTES — script.js
-   =============================================
-   CONFIGURAÇÃO: edite as constantes abaixo
+   Configuração via interface (localStorage)
    ============================================= */
 
+// Configurações fixas (estrutura da planilha)
 const CONFIG = {
-  // ← Cole aqui o ID da sua planilha do Google Sheets
-  SPREADSHEET_ID: 'SEU_SPREADSHEET_ID_AQUI',
-
-  // ← Cole aqui a sua API Key do Google Sheets
-  API_KEY: 'SUA_API_KEY_AQUI',
-
-  // Colunas que aparecem nos CHIPS do card (resumo visível)
   CARD_VISIBLE_COLS: ['DATA', 'ENTREGA', 'SCs', 'BEBIDA', 'CATA'],
-
-  // Coluna de busca principal
   SEARCH_COL: 'NOME',
-
-  // Colunas com filtro por dropdown (excluindo NOME e colunas muito únicas)
   FILTER_COLS: ['ENTREGA', 'BEBIDA', 'CATA'],
 };
 
+// Configurações salvas pelo usuário
+function getSavedConfig() {
+  return {
+    SPREADSHEET_ID: localStorage.getItem('cfg_sheet_id') || '',
+    API_KEY:        localStorage.getItem('cfg_api_key')  || '',
+  };
+}
+function saveConfig(id, key) {
+  localStorage.setItem('cfg_sheet_id', id.trim());
+  localStorage.setItem('cfg_api_key',  key.trim());
+}
+function clearConfig() {
+  localStorage.removeItem('cfg_sheet_id');
+  localStorage.removeItem('cfg_api_key');
+}
+
 /* ── Estado Global ── */
 const state = {
-  sheets: [],         // lista de abas [{title, index}]
-  activeSheet: null,  // aba selecionada
-  allRows: [],        // todos os registros da aba atual
-  filteredRows: [],   // registros após filtro
-  headers: [],        // cabeçalhos da planilha
-  filters: {},        // { col: valor }
+  sheets: [],
+  activeSheet: null,
+  allRows: [],
+  filteredRows: [],
+  headers: [],
+  filters: {},
   searchTerm: '',
-  loading: false,
 };
 
 /* ── DOM Refs ── */
 const $ = id => document.getElementById(id);
-const sheetTabs      = $('sheetTabs');
-const searchInput    = $('searchInput');
-const clearSearchBtn = $('clearSearch');
-const filterToggleBtn= $('filterToggleBtn');
-const filterPanel    = $('filterPanel');
-const filterGrid     = $('filterGrid');
-const filterBadge    = $('filterBadge');
-const clearFiltersBtn= $('clearFiltersBtn');
-const stateLoading   = $('stateLoading');
-const stateEmpty     = $('stateEmpty');
-const stateError     = $('stateError');
-const stateErrorMsg  = $('stateErrorMsg');
-const retryBtn       = $('retryBtn');
-const cardsList      = $('cardsList');
-const statusBar      = $('statusBar');
-const modalOverlay   = $('modalOverlay');
-const modalSheet     = $('modalSheet');
-const modalTitle     = $('modalTitle');
-const modalBody      = $('modalBody');
-const modalClose     = $('modalClose');
-const themeToggle    = $('themeToggle');
+const sheetTabs       = $('sheetTabs');
+const searchInput     = $('searchInput');
+const clearSearchBtn  = $('clearSearch');
+const filterToggleBtn = $('filterToggleBtn');
+const filterPanel     = $('filterPanel');
+const filterGrid      = $('filterGrid');
+const filterBadge     = $('filterBadge');
+const clearFiltersBtn = $('clearFiltersBtn');
+const stateLoading    = $('stateLoading');
+const stateEmpty      = $('stateEmpty');
+const stateError      = $('stateError');
+const stateErrorMsg   = $('stateErrorMsg');
+const retryBtn        = $('retryBtn');
+const cardsList       = $('cardsList');
+const statusBar       = $('statusBar');
+const modalOverlay    = $('modalOverlay');
+const modalSheet      = $('modalSheet');
+const modalTitle      = $('modalTitle');
+const modalBody       = $('modalBody');
+const modalClose      = $('modalClose');
+const themeToggle     = $('themeToggle');
+const configBtn       = $('configBtn');
+const configOverlay   = $('configOverlay');
+const configClose     = $('configClose');
+const inputSheetId    = $('inputSpreadsheetId');
+const inputApiKey     = $('inputApiKey');
+const configSaveBtn   = $('configSaveBtn');
+const configClearBtn  = $('configClearBtn');
+const configStatus    = $('configStatus');
+const toggleApiKey    = $('toggleApiKey');
+const helpId          = $('helpId');
+const helpKey         = $('helpKey');
+const tipId           = $('tipId');
+const tipKey          = $('tipKey');
 
 /* ═══════════════════════════════════════
    INICIALIZAÇÃO
 ═══════════════════════════════════════ */
 async function init() {
   loadTheme();
+  updateConfigBtnStyle();
+
+  const cfg = getSavedConfig();
+  if (!cfg.SPREADSHEET_ID || !cfg.API_KEY) {
+    showWelcomeScreen();
+    return;
+  }
+
   showState('loading');
   try {
     await loadSheets();
   } catch (e) {
-    showError('Não foi possível carregar a planilha. Verifique a API Key e o ID.');
+    showError('Não foi possível carregar a planilha.\nVerifique a API Key e o ID nas configurações (⚙️).');
     console.error(e);
   }
+}
+
+/* ── Tela de boas-vindas (sem config) ── */
+function showWelcomeScreen() {
+  showState('welcome');
 }
 
 /* ═══════════════════════════════════════
    GOOGLE SHEETS API
 ═══════════════════════════════════════ */
-
-// Busca lista de abas (sheets) da planilha
 async function loadSheets() {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}?key=${CONFIG.API_KEY}&fields=sheets.properties`;
+  const cfg = getSavedConfig();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.SPREADSHEET_ID}?key=${cfg.API_KEY}&fields=sheets.properties`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${res.status}`);
+  }
   const data = await res.json();
 
   state.sheets = data.sheets.map(s => ({
@@ -91,11 +123,11 @@ async function loadSheets() {
   selectSheet(state.sheets[0].title);
 }
 
-// Busca dados de uma aba específica
 async function loadSheetData(sheetTitle) {
   showState('loading');
-  const range = encodeURIComponent(`${sheetTitle}`);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEET_ID}/values/${range}?key=${CONFIG.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
+  const cfg = getSavedConfig();
+  const range = encodeURIComponent(sheetTitle);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.SPREADSHEET_ID}/values/${range}?key=${cfg.API_KEY}&valueRenderOption=FORMATTED_VALUE`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
@@ -152,20 +184,15 @@ function selectSheet(title) {
 ═══════════════════════════════════════ */
 function buildFilterUI() {
   filterGrid.innerHTML = '';
-
   const filterableCols = CONFIG.FILTER_COLS.filter(c =>
     state.headers.includes(c.toUpperCase())
   );
 
   filterableCols.forEach(col => {
     const colUpper = col.toUpperCase();
-    // Valores únicos desta coluna
     const values = [...new Set(
-      state.allRows
-        .map(r => r[colUpper] || '')
-        .filter(v => v !== '')
+      state.allRows.map(r => r[colUpper] || '').filter(v => v !== '')
     )].sort();
-
     if (values.length === 0) return;
 
     const group = document.createElement('div');
@@ -185,22 +212,15 @@ function buildFilterUI() {
 
     values.forEach(v => {
       const opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = v;
+      opt.value = v; opt.textContent = v;
       select.appendChild(opt);
     });
 
-    // Restaurar valor se já havia filtro
-    if (state.filters[colUpper]) {
-      select.value = state.filters[colUpper];
-    }
+    if (state.filters[colUpper]) select.value = state.filters[colUpper];
 
     select.addEventListener('change', () => {
-      if (select.value === '') {
-        delete state.filters[colUpper];
-      } else {
-        state.filters[colUpper] = select.value;
-      }
+      if (select.value === '') delete state.filters[colUpper];
+      else state.filters[colUpper] = select.value;
       applyFilters();
       updateFilterBadge();
     });
@@ -227,20 +247,18 @@ function updateFilterBadge() {
    BUSCA E FILTROS
 ═══════════════════════════════════════ */
 function applyFilters() {
-  const term = state.searchTerm.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const term = state.searchTerm.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   state.filteredRows = state.allRows.filter(row => {
-    // Busca por NOME
     if (term) {
-      const nome = (row[CONFIG.SEARCH_COL] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const nome = (row[CONFIG.SEARCH_COL] || '').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       if (!nome.includes(term)) return false;
     }
-
-    // Filtros por coluna
     for (const [col, val] of Object.entries(state.filters)) {
       if (val && (row[col] || '') !== val) return false;
     }
-
     return true;
   });
 
@@ -258,7 +276,6 @@ function renderCards() {
     showState('empty');
     return;
   }
-
   showState('list');
 
   state.filteredRows.forEach((row, idx) => {
@@ -266,25 +283,22 @@ function renderCards() {
     card.className = 'card';
     card.style.animationDelay = `${Math.min(idx * 30, 300)}ms`;
 
-    // Nome
     const name = document.createElement('div');
     name.className = 'card-name';
     name.textContent = row[CONFIG.SEARCH_COL] || '(sem nome)';
     card.appendChild(name);
 
-    // Chips dos campos visíveis
     const chips = document.createElement('div');
     chips.className = 'card-chips';
 
     CONFIG.CARD_VISIBLE_COLS.forEach(col => {
       const colUpper = col.toUpperCase();
-      if (colUpper === CONFIG.SEARCH_COL) return; // já mostrado no nome
+      if (colUpper === CONFIG.SEARCH_COL) return;
       const val = row[colUpper];
-      // Não mostrar ENTREGA se vazio
       if (colUpper === 'ENTREGA' && !val) return;
 
       const chip = document.createElement('div');
-      chip.className = 'chip' + (colUpper === 'SCs' || colUpper === 'VALOR' ? ' highlight' : '');
+      chip.className = 'chip' + (['SCS','VALOR'].includes(colUpper) ? ' highlight' : '');
 
       const lbl = document.createElement('span');
       lbl.className = 'chip-label';
@@ -301,7 +315,6 @@ function renderCards() {
 
     card.appendChild(chips);
 
-    // Indicador "ver mais"
     const more = document.createElement('div');
     more.className = 'card-more';
     more.textContent = '▸ Ver detalhes';
@@ -313,16 +326,14 @@ function renderCards() {
 }
 
 /* ═══════════════════════════════════════
-   MODAL
+   MODAL DE DETALHES
 ═══════════════════════════════════════ */
 function openModal(row) {
   modalTitle.textContent = row[CONFIG.SEARCH_COL] || '(sem nome)';
   modalBody.innerHTML = '';
 
-  // Mostrar todas as colunas EXCETO NOME (já no título)
   state.headers.forEach(col => {
     if (col === CONFIG.SEARCH_COL) return;
-
     const val = row[col] || '';
     const div = document.createElement('div');
     div.className = 'modal-row';
@@ -332,7 +343,7 @@ function openModal(row) {
     lbl.textContent = col;
 
     const vEl = document.createElement('span');
-    const isHighlight = ['SCs', 'VALOR', 'BEBIDA', 'CATA'].includes(col);
+    const isHighlight = ['SCS','VALOR','BEBIDA','CATA'].includes(col);
     vEl.className = 'modal-row-value' + (!val ? ' empty' : isHighlight ? ' highlight' : '');
     vEl.textContent = val || '—';
 
@@ -351,30 +362,124 @@ function closeModal() {
 }
 
 /* ═══════════════════════════════════════
+   MODAL DE CONFIGURAÇÃO
+═══════════════════════════════════════ */
+function openConfig() {
+  const cfg = getSavedConfig();
+  inputSheetId.value = cfg.SPREADSHEET_ID;
+  inputApiKey.value  = cfg.API_KEY;
+  setConfigStatus('', '');
+  configOverlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeConfig() {
+  configOverlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function setConfigStatus(type, msg) {
+  if (!type) { configStatus.style.display = 'none'; return; }
+  configStatus.className = 'config-status ' + type;
+  configStatus.textContent = msg;
+  configStatus.style.display = 'block';
+}
+
+async function handleConfigSave() {
+  const id  = inputSheetId.value.trim();
+  const key = inputApiKey.value.trim();
+
+  if (!id || !key) {
+    setConfigStatus('error', '⚠ Preencha o ID da planilha e a API Key.');
+    return;
+  }
+
+  configSaveBtn.disabled = true;
+  configSaveBtn.textContent = 'Verificando...';
+  setConfigStatus('', '');
+
+  // Testa a conexão antes de salvar
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}?key=${key}&fields=sheets.properties`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Erro HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const nSheets = data.sheets?.length || 0;
+
+    saveConfig(id, key);
+    updateConfigBtnStyle();
+    setConfigStatus('success', `✓ Conectado! ${nSheets} aba(s) encontrada(s). Carregando dados...`);
+
+    setTimeout(async () => {
+      closeConfig();
+      showState('loading');
+      sheetTabs.innerHTML = '<span class="sheet-tab-loading">Carregando abas...</span>';
+      try {
+        await loadSheets();
+      } catch (e) {
+        showError('Erro ao carregar dados da planilha.');
+      }
+    }, 1200);
+
+  } catch (e) {
+    setConfigStatus('error', `✗ ${e.message || 'Não foi possível conectar. Verifique os dados.'}`);
+  } finally {
+    configSaveBtn.disabled = false;
+    configSaveBtn.textContent = 'Salvar e conectar';
+  }
+}
+
+function updateConfigBtnStyle() {
+  const cfg = getSavedConfig();
+  configBtn.classList.toggle('has-config', !!(cfg.SPREADSHEET_ID && cfg.API_KEY));
+}
+
+/* ═══════════════════════════════════════
    STATUS BAR
 ═══════════════════════════════════════ */
 function updateStatus() {
   const total = state.allRows.length;
   const shown = state.filteredRows.length;
-  if (total === 0) {
-    statusBar.textContent = 'Nenhum registro encontrado nesta aba.';
-    return;
-  }
-  if (shown === total) {
-    statusBar.textContent = `${total} registro${total !== 1 ? 's' : ''}`;
-  } else {
-    statusBar.textContent = `${shown} de ${total} registro${total !== 1 ? 's' : ''}`;
-  }
+  if (total === 0) { statusBar.textContent = 'Nenhum registro nesta aba.'; return; }
+  if (shown === total) statusBar.textContent = `${total} registro${total !== 1 ? 's' : ''}`;
+  else statusBar.textContent = `${shown} de ${total} registro${total !== 1 ? 's' : ''}`;
 }
 
 /* ═══════════════════════════════════════
    ESTADOS DA UI
 ═══════════════════════════════════════ */
 function showState(s) {
-  stateLoading.style.display = s === 'loading' ? 'flex' : 'none';
-  stateEmpty.style.display   = s === 'empty'   ? 'flex' : 'none';
-  stateError.style.display   = s === 'error'   ? 'flex' : 'none';
-  cardsList.style.display    = s === 'list'    ? 'flex' : 'none';
+  // Esconde tudo
+  stateLoading.style.display = 'none';
+  stateEmpty.style.display   = 'none';
+  stateError.style.display   = 'none';
+  cardsList.style.display    = 'none';
+
+  // Remove tela de boas-vindas anterior, se houver
+  const existing = document.getElementById('welcomeScreen');
+  if (existing) existing.remove();
+
+  if (s === 'loading') { stateLoading.style.display = 'flex'; }
+  else if (s === 'empty')   { stateEmpty.style.display = 'flex'; }
+  else if (s === 'error')   { stateError.style.display = 'flex'; }
+  else if (s === 'list')    { cardsList.style.display = 'flex'; }
+  else if (s === 'welcome') {
+    const mainContent = document.getElementById('mainContent');
+    const div = document.createElement('div');
+    div.id = 'welcomeScreen';
+    div.className = 'welcome-screen';
+    div.innerHTML = `
+      <span class="welcome-icon">☕</span>
+      <h2 class="welcome-title">Bem-vindo!</h2>
+      <p class="welcome-desc">Configure a conexão com sua planilha do Google Sheets para começar.</p>
+      <button class="btn-welcome-config" id="welcomeConfigBtn">⚙️ Configurar agora</button>
+    `;
+    mainContent.appendChild(div);
+    document.getElementById('welcomeConfigBtn').addEventListener('click', openConfig);
+  }
 }
 
 function showError(msg) {
@@ -389,7 +494,6 @@ function loadTheme() {
   const saved = localStorage.getItem('theme') || 'light';
   applyTheme(saved);
 }
-
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
@@ -407,7 +511,6 @@ searchInput.addEventListener('input', () => {
   applyFilters();
 });
 
-// Limpar busca
 clearSearchBtn.addEventListener('click', () => {
   searchInput.value = '';
   state.searchTerm = '';
@@ -416,13 +519,12 @@ clearSearchBtn.addEventListener('click', () => {
   applyFilters();
 });
 
-// Toggle filtros
+// Filtros
 filterToggleBtn.addEventListener('click', () => {
   filterPanel.classList.toggle('open');
   filterToggleBtn.classList.toggle('active', filterPanel.classList.contains('open'));
 });
 
-// Limpar todos os filtros
 clearFiltersBtn.addEventListener('click', () => {
   state.filters = {};
   document.querySelectorAll('.filter-select').forEach(s => s.value = '');
@@ -430,26 +532,60 @@ clearFiltersBtn.addEventListener('click', () => {
   applyFilters();
 });
 
-// Modal
-modalClose.addEventListener('click', closeModal);
-modalOverlay.addEventListener('click', e => {
-  if (e.target === modalOverlay) closeModal();
+document.addEventListener('click', e => {
+  if (
+    filterPanel.classList.contains('open') &&
+    !filterPanel.contains(e.target) &&
+    !filterToggleBtn.contains(e.target)
+  ) filterPanel.classList.remove('open');
 });
 
-// Fechar modal com swipe down
+// Modal detalhes
+modalClose.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
 let touchStartY = 0;
-modalSheet.addEventListener('touchstart', e => {
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
+modalSheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
 modalSheet.addEventListener('touchend', e => {
-  const diff = e.changedTouches[0].clientY - touchStartY;
-  if (diff > 80) closeModal();
+  if (e.changedTouches[0].clientY - touchStartY > 80) closeModal();
 }, { passive: true });
+
+// Modal configuração
+configBtn.addEventListener('click', openConfig);
+configClose.addEventListener('click', closeConfig);
+configOverlay.addEventListener('click', e => { if (e.target === configOverlay) closeConfig(); });
+configSaveBtn.addEventListener('click', handleConfigSave);
+
+configClearBtn.addEventListener('click', () => {
+  if (!confirm('Remover configuração salva?')) return;
+  clearConfig();
+  updateConfigBtnStyle();
+  inputSheetId.value = '';
+  inputApiKey.value  = '';
+  setConfigStatus('success', '✓ Configuração removida.');
+});
+
+// Mostrar/ocultar API key
+toggleApiKey.addEventListener('click', () => {
+  const isPass = inputApiKey.type === 'password';
+  inputApiKey.type = isPass ? 'text' : 'password';
+  toggleApiKey.textContent = isPass ? '🙈' : '👁';
+});
+
+// Dicas de ajuda
+helpId.addEventListener('click', () => {
+  const open = helpId.classList.toggle('active');
+  tipId.style.display = open ? 'block' : 'none';
+});
+helpKey.addEventListener('click', () => {
+  const open = helpKey.classList.toggle('active');
+  tipKey.style.display = open ? 'block' : 'none';
+});
 
 // Retry
 retryBtn.addEventListener('click', () => {
   if (state.activeSheet) {
-    loadSheetData(state.activeSheet).catch(e => showError('Erro ao carregar dados.'));
+    loadSheetData(state.activeSheet).catch(() => showError('Erro ao carregar dados.'));
   } else {
     init();
   }
@@ -459,17 +595,6 @@ retryBtn.addEventListener('click', () => {
 themeToggle.addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
   applyTheme(current === 'dark' ? 'light' : 'dark');
-});
-
-// Fechar painel de filtros ao clicar fora (em mobile)
-document.addEventListener('click', e => {
-  if (
-    filterPanel.classList.contains('open') &&
-    !filterPanel.contains(e.target) &&
-    !filterToggleBtn.contains(e.target)
-  ) {
-    filterPanel.classList.remove('open');
-  }
 });
 
 /* ═══════════════════════════════════════

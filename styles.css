@@ -525,6 +525,124 @@ body {
   font-weight: 600;
 }
 
+/* ── CONFIG BUTTON ── */
+.config-btn {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.config-btn:active { transform: scale(0.92); }
+.config-btn.has-config { border-color: var(--accent2); background: var(--accent-soft); }
+
+/* ── CONFIG MODAL ── */
+.config-sheet { max-height: 90dvh; }
+
+.config-body { display: flex; flex-direction: column; gap: 18px; padding-bottom: 8px; }
+
+.config-hint {
+  font-size: 13px; color: var(--text3); line-height: 1.5;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+}
+
+.config-field { display: flex; flex-direction: column; gap: 6px; }
+
+.config-label {
+  font-size: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.7px; color: var(--text2);
+  display: flex; align-items: center; gap: 6px;
+}
+
+.config-help {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--border); color: var(--text3);
+  font-size: 10px; font-weight: 700; cursor: pointer;
+  font-style: normal; transition: var(--transition); flex-shrink: 0;
+}
+.config-help:hover, .config-help.active { background: var(--accent); color: #fff; }
+
+.config-input-wrap { position: relative; display: flex; align-items: center; }
+
+.config-input {
+  width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 11px 14px;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+  outline: none; transition: border-color var(--transition);
+}
+.config-input:focus { border-color: var(--accent); background: var(--surface); }
+.config-input::placeholder { color: var(--text3); font-size: 13px; }
+.config-input-wrap .config-input { padding-right: 42px; }
+
+.config-eye {
+  position: absolute; right: 10px; background: none; border: none;
+  font-size: 16px; cursor: pointer; color: var(--text3);
+  padding: 4px; border-radius: 4px; transition: var(--transition);
+}
+.config-eye:active { transform: scale(0.9); }
+
+.config-tip {
+  font-size: 12px; color: var(--text3); line-height: 1.6;
+  background: var(--surface2); border-left: 3px solid var(--accent);
+  padding: 8px 12px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  animation: fadeSlide 0.2s ease;
+}
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.config-tip code { font-size: 11px; word-break: break-all; }
+.config-tip strong { color: var(--accent); }
+
+.config-status {
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; line-height: 1.4;
+}
+.config-status.success { background: var(--accent-soft); border: 1px solid var(--accent2); color: var(--accent); }
+.config-status.error   { background: #fde8e6; border: 1px solid #e57368; color: var(--danger); }
+[data-theme="dark"] .config-status.error { background: #3a1a18; border-color: #8a3530; }
+
+.config-actions { display: flex; flex-direction: column; gap: 8px; }
+
+.btn-config-save {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius-sm); padding: 13px;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: var(--transition); letter-spacing: 0.2px;
+}
+.btn-config-save:active { transform: scale(0.98); opacity: 0.9; }
+.btn-config-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-config-clear {
+  background: none; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  color: var(--text3); cursor: pointer; transition: var(--transition);
+}
+.btn-config-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ── TELA DE BOAS VINDAS ── */
+.welcome-screen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 60px 24px; gap: 16px;
+  text-align: center; min-height: 60dvh;
+}
+.welcome-icon { font-size: 56px; }
+.welcome-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: var(--text); }
+.welcome-desc { font-size: 14px; color: var(--text3); line-height: 1.6; max-width: 280px; }
+.btn-welcome-config {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius-sm); padding: 13px 28px;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: var(--transition); margin-top: 8px;
+}
+.btn-welcome-config:active { transform: scale(0.97); }
+
 /* ── UTILS ── */
 .hidden { display: none !important; }
 

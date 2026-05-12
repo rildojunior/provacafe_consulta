@@ -22,6 +22,7 @@
         <span class="logo-text">Consulta de Lotes</span>
       </div>
       <button class="theme-toggle" id="themeToggle" title="Alternar tema">🌙</button>
+      <button class="config-btn" id="configBtn" title="Configurações">⚙️</button>
     </div>
 
     <!-- Seletor de Página -->
@@ -102,6 +103,73 @@
         <button class="modal-close" id="modalClose">✕</button>
       </div>
       <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÃO -->
+  <div class="modal-overlay" id="configOverlay" style="display:none">
+    <div class="modal-sheet config-sheet" id="configSheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title">⚙️ Configuração</h2>
+        <button class="modal-close" id="configClose">✕</button>
+      </div>
+      <div class="config-body">
+        <p class="config-hint">
+          Preencha os dados abaixo para conectar à sua planilha do Google Sheets.
+          As informações ficam salvas no dispositivo.
+        </p>
+
+        <div class="config-field">
+          <label class="config-label" for="inputSpreadsheetId">
+            ID da Planilha
+            <span class="config-help" id="helpId">?</span>
+          </label>
+          <input
+            type="text"
+            id="inputSpreadsheetId"
+            class="config-input"
+            placeholder="Ex: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+          <span class="config-tip" id="tipId" style="display:none">
+            Encontre o ID na URL da planilha:<br>
+            <code>docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit</code>
+          </span>
+        </div>
+
+        <div class="config-field">
+          <label class="config-label" for="inputApiKey">
+            API Key do Google
+            <span class="config-help" id="helpKey">?</span>
+          </label>
+          <div class="config-input-wrap">
+            <input
+              type="password"
+              id="inputApiKey"
+              class="config-input"
+              placeholder="AIzaSy..."
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="config-eye" id="toggleApiKey">👁</button>
+          </div>
+          <span class="config-tip" id="tipKey" style="display:none">
+            Gere em <strong>console.cloud.google.com</strong> →
+            APIs e serviços → Credenciais → Criar credencial → Chave de API.
+            Habilite a API Google Sheets no projeto.
+          </span>
+        </div>
+
+        <div class="config-status" id="configStatus" style="display:none"></div>
+
+        <div class="config-actions">
+          <button class="btn-config-save" id="configSaveBtn">Salvar e conectar</button>
+          <button class="btn-config-clear" id="configClearBtn">Limpar dados salvos</button>
+        </div>
+      </div>
     </div>
   </div>
 
