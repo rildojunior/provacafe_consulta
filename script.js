@@ -5,9 +5,9 @@
 
 // Configurações fixas (estrutura da planilha)
 const CONFIG = {
-  CARD_VISIBLE_COLS: ['DATA', 'ENTREGA', 'SCs', 'BEBIDA', 'CATA'],
+  CARD_VISIBLE_COLS: ['DATA', 'ENTREGA', 'SCs', 'BEBIDA', 'CATA', '17/18'],
   SEARCH_COL: 'NOME',
-  FILTER_COLS: ['ENTREGA', 'BEBIDA', 'CATA'],
+  FILTER_COLS: ['DATA', 'ENTREGA', 'BEBIDA'],
 };
 
 // Configurações salvas pelo usuário
@@ -190,16 +190,38 @@ function buildFilterUI() {
 
   filterableCols.forEach(col => {
     const colUpper = col.toUpperCase();
-    const values = [...new Set(
-      state.allRows.map(r => r[colUpper] || '').filter(v => v !== '')
-    )].sort();
-    if (values.length === 0) return;
 
     const group = document.createElement('div');
     group.className = 'filter-group';
 
     const label = document.createElement('label');
     label.textContent = colUpper;
+    group.appendChild(label);
+
+    // DATA usa campo de texto (busca parcial)
+    if (colUpper === 'DATA') {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'filter-select';
+      input.placeholder = 'Ex: 01/2025';
+      input.dataset.col = colUpper;
+      input.value = state.filters[colUpper] || '';
+      input.addEventListener('input', () => {
+        if (input.value.trim() === '') delete state.filters[colUpper];
+        else state.filters[colUpper] = input.value.trim();
+        applyFilters();
+        updateFilterBadge();
+      });
+      group.appendChild(input);
+      filterGrid.appendChild(group);
+      return;
+    }
+
+    // Demais colunas: dropdown com valores únicos
+    const values = [...new Set(
+      state.allRows.map(r => r[colUpper] || '').filter(v => v !== '')
+    )].sort();
+    if (values.length === 0) return;
 
     const select = document.createElement('select');
     select.className = 'filter-select';
@@ -225,7 +247,6 @@ function buildFilterUI() {
       updateFilterBadge();
     });
 
-    group.appendChild(label);
     group.appendChild(select);
     filterGrid.appendChild(group);
   });
@@ -257,7 +278,14 @@ function applyFilters() {
       if (!nome.includes(term)) return false;
     }
     for (const [col, val] of Object.entries(state.filters)) {
-      if (val && (row[col] || '') !== val) return false;
+      if (!val) continue;
+      const cellVal = (row[col] || '').toLowerCase();
+      // DATA: busca parcial (contém)
+      if (col === 'DATA') {
+        if (!cellVal.includes(val.toLowerCase())) return false;
+      } else {
+        if (cellVal !== val.toLowerCase()) return false;
+      }
     }
     return true;
   });
@@ -298,7 +326,7 @@ function renderCards() {
       if (colUpper === 'ENTREGA' && !val) return;
 
       const chip = document.createElement('div');
-      chip.className = 'chip' + (['SCS','VALOR'].includes(colUpper) ? ' highlight' : '');
+      chip.className = 'chip' + (colUpper === 'BEBIDA' ? ' highlight' : '');
 
       const lbl = document.createElement('span');
       lbl.className = 'chip-label';
@@ -343,7 +371,7 @@ function openModal(row) {
     lbl.textContent = col;
 
     const vEl = document.createElement('span');
-    const isHighlight = ['SCS','VALOR','BEBIDA','CATA'].includes(col);
+    const isHighlight = ['BEBIDA'].includes(col);
     vEl.className = 'modal-row-value' + (!val ? ' empty' : isHighlight ? ' highlight' : '');
     vEl.textContent = val || '—';
 
@@ -528,6 +556,7 @@ filterToggleBtn.addEventListener('click', () => {
 clearFiltersBtn.addEventListener('click', () => {
   state.filters = {};
   document.querySelectorAll('.filter-select').forEach(s => s.value = '');
+  document.querySelectorAll('.filter-group input[type="text"]').forEach(i => i.value = '');
   updateFilterBadge();
   applyFilters();
 });
