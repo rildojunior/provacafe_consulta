@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a2e1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Consulta" />
+  <title>Consulta de Lotes</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-top">
+      <div class="logo-area">
+        <span class="logo-icon">☕</span>
+        <span class="logo-text">Consulta de Lotes</span>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Alternar tema">🌙</button>
+    </div>
+
+    <!-- Seletor de Página -->
+    <div class="sheet-selector-wrap">
+      <label class="sheet-label">Página da planilha</label>
+      <div class="sheet-tabs" id="sheetTabs">
+        <span class="sheet-tab-loading">Carregando abas...</span>
+      </div>
+    </div>
+
+    <!-- Busca -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input
+        type="search"
+        id="searchInput"
+        class="search-input"
+        placeholder="Buscar por nome..."
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+      />
+      <button class="clear-search" id="clearSearch" title="Limpar">✕</button>
+    </div>
+
+    <!-- Filtros toggle -->
+    <button class="filter-toggle-btn" id="filterToggleBtn">
+      <span>⚙ Filtros</span>
+      <span class="filter-badge" id="filterBadge" style="display:none">0</span>
+    </button>
+  </header>
+
+  <!-- PAINEL DE FILTROS -->
+  <div class="filter-panel" id="filterPanel">
+    <div class="filter-grid" id="filterGrid">
+      <!-- gerado dinamicamente -->
+    </div>
+    <div class="filter-actions">
+      <button class="btn-clear-filters" id="clearFiltersBtn">Limpar filtros</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+
+    <div class="status-bar" id="statusBar"></div>
+
+    <!-- Estado: carregando -->
+    <div class="state-loading" id="stateLoading">
+      <div class="spinner"></div>
+      <p>Carregando dados...</p>
+    </div>
+
+    <!-- Estado: vazio -->
+    <div class="state-empty" id="stateEmpty" style="display:none">
+      <span class="state-icon">🔎</span>
+      <p>Nenhum resultado encontrado.</p>
+    </div>
+
+    <!-- Estado: erro -->
+    <div class="state-error" id="stateError" style="display:none">
+      <span class="state-icon">⚠️</span>
+      <p id="stateErrorMsg">Erro ao carregar dados.</p>
+      <button class="btn-retry" id="retryBtn">Tentar novamente</button>
+    </div>
+
+    <!-- Lista de cards -->
+    <div class="cards-list" id="cardsList" style="display:none"></div>
+
+  </main>
+
+  <!-- MODAL DE DETALHES -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none">
+    <div class="modal-sheet" id="modalSheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">—</h2>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
