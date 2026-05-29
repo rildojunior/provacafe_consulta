@@ -295,6 +295,19 @@ function applyFilters() {
 }
 
 /* ═══════════════════════════════════════
+   BEBIDA — COR DINÂMICA
+═══════════════════════════════════════ */
+function getBebidaColorClass(val) {
+  const code = (val || '').split(' ')[0].toUpperCase();
+  const letters = code.replace(/[0-9]/g, '');
+  if (!letters) return '';
+  if (letters.includes('B')) return 'bebida-red';
+  if (letters.includes('L')) return 'bebida-yellow';
+  if (letters.includes('R')) return 'bebida-green';
+  return '';
+}
+
+/* ═══════════════════════════════════════
    RENDER CARDS
 ═══════════════════════════════════════ */
 function renderCards() {
@@ -326,7 +339,8 @@ function renderCards() {
       if (colUpper === 'ENTREGA' && !val) return;
 
       const chip = document.createElement('div');
-      chip.className = 'chip' + (colUpper === 'BEBIDA' ? ' highlight' : '');
+      const chipHighlight = colUpper === 'BEBIDA' ? getBebidaColorClass(val) : '';
+      chip.className = 'chip' + (chipHighlight ? ' ' + chipHighlight : '');
 
       const lbl = document.createElement('span');
       lbl.className = 'chip-label';
@@ -371,8 +385,8 @@ function openModal(row) {
     lbl.textContent = col;
 
     const vEl = document.createElement('span');
-    const isHighlight = ['BEBIDA'].includes(col);
-    vEl.className = 'modal-row-value' + (!val ? ' empty' : isHighlight ? ' highlight' : '');
+    const modalHighlight = col === 'BEBIDA' ? getBebidaColorClass(val) : '';
+    vEl.className = 'modal-row-value' + (!val ? ' empty' : modalHighlight ? ' ' + modalHighlight : '');
     vEl.textContent = val || '—';
 
     div.appendChild(lbl);

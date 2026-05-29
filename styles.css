@@ -20,6 +20,15 @@
   --accent-soft: #d4ead9;
   --danger:      #c0392b;
   --warn:        #e67e22;
+  --bebida-green-bg:     #d4ead9;
+  --bebida-green-border: #4a9460;
+  --bebida-green-text:   #2e6b3e;
+  --bebida-yellow-bg:    #fdf4dc;
+  --bebida-yellow-border:#d4a843;
+  --bebida-yellow-text:  #9b6e1a;
+  --bebida-red-bg:       #fde8e6;
+  --bebida-red-border:   #e57368;
+  --bebida-red-text:     #c0392b;
   --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
   --card-shadow-hover: 0 6px 24px rgba(0,0,0,0.12);
   --radius:      14px;
@@ -42,6 +51,15 @@
   --accent-soft: #1a3a22;
   --card-shadow: 0 2px 12px rgba(0,0,0,0.3);
   --card-shadow-hover: 0 6px 24px rgba(0,0,0,0.5);
+  --bebida-green-bg:     #1a3a22;
+  --bebida-green-border: #62b07a;
+  --bebida-green-text:   #62b07a;
+  --bebida-yellow-bg:    #2a2008;
+  --bebida-yellow-border:#6a4e1a;
+  --bebida-yellow-text:  #d4a843;
+  --bebida-red-bg:       #3a1a18;
+  --bebida-red-border:   #8a3530;
+  --bebida-red-text:     #e57368;
 }
 
 /* ── RESET & BASE ── */
@@ -403,12 +421,26 @@ body {
 }
 .chip-value.empty { color: var(--text3); font-style: italic; font-size: 12px; }
 
-.chip.highlight {
-  background: var(--accent-soft);
-  border-color: var(--accent2);
+.chip.bebida-green {
+  background: var(--bebida-green-bg);
+  border-color: var(--bebida-green-border);
 }
-.chip.highlight .chip-label { color: var(--accent); }
-.chip.highlight .chip-value { color: var(--accent); font-weight: 600; }
+.chip.bebida-green .chip-label { color: var(--bebida-green-text); }
+.chip.bebida-green .chip-value { color: var(--bebida-green-text); font-weight: 600; }
+
+.chip.bebida-yellow {
+  background: var(--bebida-yellow-bg);
+  border-color: var(--bebida-yellow-border);
+}
+.chip.bebida-yellow .chip-label { color: var(--bebida-yellow-text); }
+.chip.bebida-yellow .chip-value { color: var(--bebida-yellow-text); font-weight: 600; }
+
+.chip.bebida-red {
+  background: var(--bebida-red-bg);
+  border-color: var(--bebida-red-border);
+}
+.chip.bebida-red .chip-label { color: var(--bebida-red-text); }
+.chip.bebida-red .chip-value { color: var(--bebida-red-text); font-weight: 600; }
 
 .card-more {
   margin-top: 10px;
@@ -520,10 +552,9 @@ body {
   font-style: italic;
   font-size: 13px;
 }
-.modal-row-value.highlight {
-  color: var(--accent);
-  font-weight: 600;
-}
+.modal-row-value.bebida-green  { color: var(--bebida-green-text);  font-weight: 600; }
+.modal-row-value.bebida-yellow { color: var(--bebida-yellow-text); font-weight: 600; }
+.modal-row-value.bebida-red    { color: var(--bebida-red-text);    font-weight: 600; }
 
 /* ── CONFIG BUTTON ── */
 .config-btn {
