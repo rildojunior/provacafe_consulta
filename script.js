@@ -295,6 +295,38 @@ function applyFilters() {
 }
 
 /* ═══════════════════════════════════════
+   COPIAR CARD
+═══════════════════════════════════════ */
+const COPY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const CHECK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) return navigator.clipboard.writeText(text);
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  return Promise.resolve();
+}
+
+function buildCopyText(row) {
+  const fields = [
+    { label: 'Nome',       key: 'NOME' },
+    { label: 'Quantidade', key: 'SCS' },
+    { label: 'Bebida',     key: 'BEBIDA' },
+    { label: 'Cata',       key: 'CATA' },
+    { label: 'Umidade',    key: 'UMID.' },
+  ];
+  return fields
+    .filter(f => row[f.key] && row[f.key].trim() !== '')
+    .map(f => `${f.label}: ${row[f.key]}`)
+    .join('\n');
+}
+
+/* ═══════════════════════════════════════
    BEBIDA — COR DINÂMICA
 ═══════════════════════════════════════ */
 function getBebidaColorClass(val) {
@@ -324,10 +356,32 @@ function renderCards() {
     card.className = 'card';
     card.style.animationDelay = `${Math.min(idx * 30, 300)}ms`;
 
+    const cardHeader = document.createElement('div');
+    cardHeader.className = 'card-header';
+
     const name = document.createElement('div');
     name.className = 'card-name';
     name.textContent = row[CONFIG.SEARCH_COL] || '(sem nome)';
-    card.appendChild(name);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-copy';
+    copyBtn.title = 'Copiar';
+    copyBtn.innerHTML = COPY_ICON;
+    copyBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      copyToClipboard(buildCopyText(row)).then(() => {
+        copyBtn.innerHTML = CHECK_ICON;
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.innerHTML = COPY_ICON;
+          copyBtn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+
+    cardHeader.appendChild(name);
+    cardHeader.appendChild(copyBtn);
+    card.appendChild(cardHeader);
 
     const chips = document.createElement('div');
     chips.className = 'card-chips';

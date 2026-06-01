@@ -382,13 +382,47 @@ body {
   border-color: var(--accent2);
 }
 
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
 .card-name {
   font-family: 'Syne', sans-serif;
   font-weight: 700;
   font-size: 16px;
   color: var(--text);
-  margin-bottom: 10px;
   line-height: 1.2;
+  flex: 1;
+}
+
+.btn-copy {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text3);
+  transition: var(--transition);
+}
+.btn-copy:hover {
+  background: var(--bg2);
+  color: var(--accent);
+  border-color: var(--accent2);
+}
+.btn-copy:active { transform: scale(0.92); }
+.btn-copy.copied {
+  background: var(--accent-soft);
+  border-color: var(--accent2);
+  color: var(--accent);
 }
 
 .card-chips {
