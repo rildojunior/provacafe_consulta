@@ -111,6 +111,27 @@ body {
   letter-spacing: -0.3px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-btn {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.refresh-btn:active { transform: scale(0.92); }
+.refresh-btn.loading {
+  animation: spin 0.8s linear infinite;
+}
+
 .theme-toggle {
   background: var(--bg2);
   border: 1px solid var(--border);

@@ -59,6 +59,7 @@ const modalSheet      = $('modalSheet');
 const modalTitle      = $('modalTitle');
 const modalBody       = $('modalBody');
 const modalClose      = $('modalClose');
+const refreshBtn      = $('refreshBtn');
 const themeToggle     = $('themeToggle');
 const configBtn       = $('configBtn');
 const configOverlay   = $('configOverlay');
@@ -685,6 +686,20 @@ retryBtn.addEventListener('click', () => {
     loadSheetData(state.activeSheet).catch(() => showError('Erro ao carregar dados.'));
   } else {
     init();
+  }
+});
+
+// Refresh
+refreshBtn.addEventListener('click', async () => {
+  if (!state.activeSheet) return;
+  refreshBtn.classList.add('loading');
+  try {
+    await loadSheetData(state.activeSheet);
+  } catch (e) {
+    showError('Erro ao atualizar dados.');
+    console.error(e);
+  } finally {
+    refreshBtn.classList.remove('loading');
   }
 });
 
