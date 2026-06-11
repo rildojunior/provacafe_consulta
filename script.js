@@ -354,7 +354,7 @@ function renderCards() {
 
   state.filteredRows.forEach((row, idx) => {
     const card = document.createElement('div');
-    card.className = 'card';
+    card.className = 'card' + (row['ENTREGA'] ? ' has-entrega' : '');
     card.style.animationDelay = `${Math.min(idx * 30, 300)}ms`;
 
     const cardHeader = document.createElement('div');

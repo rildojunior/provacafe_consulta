@@ -424,6 +424,10 @@ body {
   box-shadow: var(--card-shadow-hover);
   border-color: var(--accent2);
 }
+.card.has-entrega {
+  border-left: 3px solid var(--accent2);
+  padding-left: 14px;
+}
 
 .card-header {
   display: flex;
