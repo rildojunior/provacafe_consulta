@@ -3,7 +3,7 @@
    Cache dos arquivos estáticos + dados offline
    ============================================= */
 
-const CACHE_NAME = 'consulta-lotes-v4'
+const CACHE_NAME = 'consulta-lotes-v5'
 
 const STATIC_FILES = [
   './',
