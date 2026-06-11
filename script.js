@@ -529,10 +529,7 @@ async function handleConfigSave() {
   }
 }
 
-function updateConfigBtnStyle() {
-  const cfg = getSavedConfig();
-  configBtn.classList.toggle('has-config', !!(cfg.SPREADSHEET_ID && cfg.API_KEY));
-}
+function updateConfigBtnStyle() {}
 
 /* ═══════════════════════════════════════
    STATUS BAR

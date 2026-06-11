@@ -99,9 +99,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
-.logo-icon { font-size: 17px; }
+.logo-icon { font-size: 17px; flex-shrink: 0; }
 
 .logo-text {
   font-family: 'Syne', sans-serif;
@@ -109,12 +111,17 @@ body {
   font-size: 15px;
   color: var(--accent);
   letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .refresh-btn {
@@ -638,7 +645,6 @@ body {
   transition: var(--transition);
 }
 .config-btn:active { transform: scale(0.92); }
-.config-btn.has-config { border-color: var(--accent2); background: var(--accent-soft); }
 
 /* ── CONFIG MODAL ── */
 .config-sheet { max-height: 90dvh; }
