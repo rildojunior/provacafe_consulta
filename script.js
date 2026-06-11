@@ -398,7 +398,7 @@ function renderCards() {
       chip.className = 'chip' + (chipHighlight ? ' ' + chipHighlight : '');
 
       const lbl = document.createElement('span');
-      lbl.className = 'chip-label';
+      lbl.className = 'chip-label' + (colUpper === 'ENTREGA' ? ' chip-label--entrega' : '');
       lbl.textContent = colUpper;
 
       const vEl = document.createElement('span');

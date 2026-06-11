@@ -501,6 +501,7 @@ body {
   color: var(--text);
 }
 .chip-value.empty { color: var(--text3); font-style: italic; font-size: 12px; }
+.chip-label--entrega { color: var(--accent2); }
 
 .chip.bebida-green {
   background: var(--bebida-green-bg);
