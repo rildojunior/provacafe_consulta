@@ -313,6 +313,18 @@ function copyToClipboard(text) {
   return Promise.resolve();
 }
 
+function formatBebidaForCopy(val) {
+  const colorClass = getBebidaColorClass(val);
+  const prefixMap = { 'bebida-green': 'Duro', 'bebida-yellow': 'Duro Riado', 'bebida-red': 'Rio' };
+  const prefix = prefixMap[colorClass];
+  if (!prefix) return val;
+  const parts = (val || '').split(' ');
+  const suffix = parts.length > 1
+    ? ' ' + parts.slice(1).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    : '';
+  return prefix + suffix;
+}
+
 function buildCopyText(row) {
   const fields = [
     { label: 'Nome',       key: 'NOME' },
@@ -323,7 +335,7 @@ function buildCopyText(row) {
   ];
   return fields
     .filter(f => row[f.key] && row[f.key].trim() !== '')
-    .map(f => `${f.label}: ${row[f.key]}`)
+    .map(f => `${f.label}: ${f.key === 'BEBIDA' ? formatBebidaForCopy(row[f.key]) : row[f.key]}`)
     .join('\n');
 }
 
