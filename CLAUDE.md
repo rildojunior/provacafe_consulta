@@ -69,7 +69,9 @@ const CACHE_NAME = 'consulta-lotes-vXX'  // incrementar XX
 
 O service worker usa cache-first para estáticos e network-first para a API do Google Sheets.
 
-## Commits
+## Commits e Push
+
+**Nunca fazer commit nem push sem perguntar antes.** Após concluir as alterações, apresentar o que foi feito e aguardar o usuário decidir o momento de commitar e publicar.
 
 Usar sempre o padrão **Conventional Commits**:
 
