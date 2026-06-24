@@ -720,6 +720,14 @@ body {
 }
 .btn-config-clear:hover { border-color: var(--danger); color: var(--danger); }
 
+.config-version {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text3);
+  padding-top: 4px;
+}
+.config-version::before { content: 'versão '; }
+
 /* ── TELA DE BOAS VINDAS ── */
 .welcome-screen {
   display: flex; flex-direction: column; align-items: center;

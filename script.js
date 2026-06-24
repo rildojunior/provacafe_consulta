@@ -473,11 +473,24 @@ function closeModal() {
 /* ═══════════════════════════════════════
    MODAL DE CONFIGURAÇÃO
 ═══════════════════════════════════════ */
+async function loadAppVersion() {
+  const el = document.getElementById('configVersion');
+  if (!el) return;
+  try {
+    const keys = await caches.keys();
+    const name = keys.find(k => k.startsWith('consulta-lotes-'));
+    el.textContent = name ? name.replace('consulta-lotes-', '') : '—';
+  } catch {
+    el.textContent = '—';
+  }
+}
+
 function openConfig() {
   const cfg = getSavedConfig();
   inputSheetId.value = cfg.SPREADSHEET_ID;
   inputApiKey.value  = cfg.API_KEY;
   setConfigStatus('', '');
+  loadAppVersion();
   configOverlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
