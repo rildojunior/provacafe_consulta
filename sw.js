@@ -3,7 +3,7 @@
    Cache dos arquivos estáticos + dados offline
    ============================================= */
 
-const CACHE_NAME = 'consulta-lotes-v12'
+const CACHE_NAME = 'consulta-lotes-v14'
 
 const STATIC_FILES = [
   './',
@@ -11,7 +11,11 @@ const STATIC_FILES = [
   './styles.css',
   './script.js',
   './manifest.json',
-  './icon-192.svg'
+  './assets/icons/favicon.svg',
+  './assets/icons/icon-180.png',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
+  './assets/icons/maskable-512.png'
 ]
 
 /* ── Install: cache estáticos ── */
