@@ -161,7 +161,7 @@ async function loadSheetData(sheetTitle) {
   state.filters = {}
   state.searchTerm = searchInput.value.trim()
   buildFilterUI()
-  applyFilters()
+  applyFilters({ animate: true })
 }
 
 /* ═══════════════════════════════════════
@@ -281,7 +281,7 @@ function updateFilterBadge() {
 /* ═══════════════════════════════════════
    BUSCA E FILTROS
 ═══════════════════════════════════════ */
-function applyFilters() {
+function applyFilters({ animate = false } = {}) {
   const term = state.searchTerm
     .toLowerCase()
     .normalize('NFD')
@@ -308,7 +308,7 @@ function applyFilters() {
     return true
   })
 
-  renderCards()
+  renderCards({ animate })
   updateStatus()
 }
 
@@ -384,7 +384,7 @@ function getBebidaColorClass(val) {
 /* ═══════════════════════════════════════
    RENDER CARDS
 ═══════════════════════════════════════ */
-function renderCards() {
+function renderCards({ animate = false } = {}) {
   cardsList.innerHTML = ''
 
   if (state.filteredRows.length === 0) {
@@ -396,7 +396,10 @@ function renderCards() {
   state.filteredRows.forEach((row, idx) => {
     const card = document.createElement('div')
     card.className = 'card' + (row['ENTREGA'] ? ' has-entrega' : '')
-    card.style.animationDelay = `${Math.min(idx * 30, 300)}ms`
+    if (animate) {
+      card.classList.add('card--enter')
+      card.style.animationDelay = `${Math.min(idx * 20, 160)}ms`
+    }
 
     const cardHeader = document.createElement('div')
     cardHeader.className = 'card-header'
@@ -414,6 +417,7 @@ function renderCards() {
       copyToClipboard(buildCopyText(row)).then(() => {
         copyBtn.innerHTML = CHECK_ICON
         copyBtn.classList.add('copied')
+        navigator.vibrate?.(10)
         setTimeout(() => {
           copyBtn.innerHTML = COPY_ICON
           copyBtn.classList.remove('copied')
@@ -494,14 +498,191 @@ function openModal(row) {
     modalBody.appendChild(div)
   })
 
-  modalOverlay.style.display = 'flex'
-  document.body.style.overflow = 'hidden'
+  detailSheet.open()
 }
 
 function closeModal() {
-  modalOverlay.style.display = 'none'
-  document.body.style.overflow = ''
+  detailSheet.close()
 }
+
+/* ═══════════════════════════════════════
+   BOTTOM SHEET — mola + arrastar para fechar
+═══════════════════════════════════════ */
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+// Onde o gesto iria parar (mesma curva da desaceleração do scroll no iOS)
+function projectMomentum(velocity, decelerationRate = 0.998) {
+  return ((velocity / 1000) * decelerationRate) / (1 - decelerationRate)
+}
+
+// Resistência progressiva ao passar do limite, em vez de parar seco
+function rubberband(overshoot, dimension, constant = 0.55) {
+  return (
+    (overshoot * dimension * constant) /
+    (dimension + constant * Math.abs(overshoot))
+  )
+}
+
+function createSheet(overlay, sheet) {
+  const SCRIM_OPACITY = 0.45
+  let y = 0
+  let velocity = 0
+  let raf = 0
+  let isOpen = false
+
+  const height = () => sheet.offsetHeight || window.innerHeight
+
+  function render() {
+    sheet.style.transform = `translate3d(0, ${y}px, 0)`
+    const progress = Math.min(Math.max(y / height(), 0), 1)
+    overlay.style.backgroundColor = `rgba(0,0,0,${SCRIM_OPACITY * (1 - progress)})`
+  }
+
+  function stop() {
+    cancelAnimationFrame(raf)
+    raf = 0
+  }
+
+  // Mola: response = rapidez em segundos; damping 1 = sem overshoot.
+  // Parte sempre da posição e velocidade atuais, então pode ser interrompida.
+  function springTo(target, { response = 0.35, damping = 1 } = {}, done) {
+    stop()
+    if (prefersReducedMotion.matches) {
+      y = target
+      velocity = 0
+      render()
+      done?.()
+      return
+    }
+    const stiffness = ((2 * Math.PI) / response) ** 2
+    const friction = (4 * Math.PI * damping) / response
+    let last = performance.now()
+    const step = now => {
+      const dt = Math.min((now - last) / 1000, 0.064)
+      last = now
+      const n = Math.max(1, Math.ceil(dt / 0.004))
+      const h = dt / n
+      for (let i = 0; i < n; i++) {
+        velocity += (-stiffness * (y - target) - friction * velocity) * h
+        y += velocity * h
+      }
+      if (Math.abs(y - target) < 0.5 && Math.abs(velocity) < 10) {
+        y = target
+        velocity = 0
+        render()
+        raf = 0
+        done?.()
+        return
+      }
+      render()
+      raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+  }
+
+  function open() {
+    isOpen = true
+    if (overlay.style.display === 'none') {
+      overlay.style.display = 'flex'
+      sheet.scrollTop = 0
+      y = height()
+      velocity = 0
+      render()
+    }
+    document.body.style.overflow = 'hidden'
+    springTo(0)
+  }
+
+  // Sai pelo mesmo caminho por onde entrou (para baixo)
+  function close(releaseVelocity) {
+    if (!isOpen) return
+    isOpen = false
+    if (releaseVelocity !== undefined) velocity = releaseVelocity
+    springTo(height(), { response: 0.3 }, () => {
+      overlay.style.display = 'none'
+      document.body.style.overflow = ''
+    })
+  }
+
+  // Arrastar: segue o dedo 1:1 e herda a velocidade ao soltar
+  let tracking = false
+  let dragging = false
+  let fromGrabArea = false
+  let startY = 0
+  let grabOffset = 0
+  let samples = []
+
+  sheet.addEventListener(
+    'touchstart',
+    e => {
+      if (!isOpen || e.touches.length > 1) return
+      tracking = true
+      dragging = false
+      startY = e.touches[0].clientY
+      fromGrabArea = !!e.target.closest('.modal-handle, .modal-header')
+      samples = [{ y: startY, t: e.timeStamp }]
+    },
+    { passive: true }
+  )
+
+  sheet.addEventListener(
+    'touchmove',
+    e => {
+      if (!tracking) return
+      const cy = e.touches[0].clientY
+      if (!dragging) {
+        const dy = cy - startY
+        if (Math.abs(dy) < 10) return // histerese antes de decidir a direção
+        if (fromGrabArea || (dy > 0 && sheet.scrollTop <= 0)) {
+          dragging = true
+          stop() // agarra a folha mesmo no meio de uma animação
+          grabOffset = cy - y // respeita o ponto onde foi agarrada
+        } else {
+          tracking = false // é rolagem do conteúdo
+          return
+        }
+      }
+      e.preventDefault()
+      const raw = cy - grabOffset
+      y = raw < 0 ? rubberband(raw, height()) : raw
+      render()
+      samples.push({ y: cy, t: e.timeStamp })
+      if (samples.length > 6) samples.shift()
+    },
+    { passive: false }
+  )
+
+  function endDrag(e) {
+    tracking = false
+    if (!dragging) return
+    dragging = false
+    const lastSample = samples[samples.length - 1]
+    const recent = samples.filter(s => lastSample.t - s.t <= 100)
+    const first = recent[0]
+    const dt = (lastSample.t - first.t) / 1000
+    // dedo parado antes de soltar = sem momento
+    const v = dt > 0 && e.timeStamp - lastSample.t < 100 ? (lastSample.y - first.y) / dt : 0
+    if (y + projectMomentum(v) > height() * 0.5) {
+      close(v)
+    } else {
+      velocity = v
+      springTo(0, { response: 0.3 })
+    }
+  }
+  sheet.addEventListener('touchend', endDrag)
+  sheet.addEventListener('touchcancel', endDrag)
+
+  return {
+    open,
+    close,
+    get isOpen() {
+      return isOpen
+    }
+  }
+}
+
+const detailSheet = createSheet(modalOverlay, modalSheet)
+const configSheet = createSheet(configOverlay, $('configSheet'))
 
 /* ═══════════════════════════════════════
    MODAL DE CONFIGURAÇÃO
@@ -524,13 +705,11 @@ function openConfig() {
   inputApiKey.value = cfg.API_KEY
   setConfigStatus('', '')
   loadAppVersion()
-  configOverlay.style.display = 'flex'
-  document.body.style.overflow = 'hidden'
+  configSheet.open()
 }
 
 function closeConfig() {
-  configOverlay.style.display = 'none'
-  document.body.style.overflow = ''
+  configSheet.close()
 }
 
 function setConfigStatus(type, msg) {
@@ -728,21 +907,11 @@ modalOverlay.addEventListener('click', e => {
   if (e.target === modalOverlay) closeModal()
 })
 
-let touchStartY = 0
-modalSheet.addEventListener(
-  'touchstart',
-  e => {
-    touchStartY = e.touches[0].clientY
-  },
-  { passive: true }
-)
-modalSheet.addEventListener(
-  'touchend',
-  e => {
-    if (e.changedTouches[0].clientY - touchStartY > 80) closeModal()
-  },
-  { passive: true }
-)
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return
+  if (detailSheet.isOpen) closeModal()
+  else if (configSheet.isOpen) closeConfig()
+})
 
 // Modal configuração
 configBtn.addEventListener('click', openConfig)
@@ -806,7 +975,9 @@ refreshBtn.addEventListener('click', async () => {
 // Tema
 themeToggle.addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') || 'light'
-  applyTheme(current === 'dark' ? 'light' : 'dark')
+  const next = current === 'dark' ? 'light' : 'dark'
+  if (document.startViewTransition) document.startViewTransition(() => applyTheme(next))
+  else applyTheme(next)
 })
 
 /* ═══════════════════════════════════════
