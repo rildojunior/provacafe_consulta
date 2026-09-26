@@ -1,0 +1,7 @@
+# macOS
+.DS_Store
+
+# Skills do Claude Code (locais)
+.agents/
+.claude/
+skills-lock.json
