@@ -281,32 +281,82 @@ function updateFilterBadge() {
 /* ═══════════════════════════════════════
    BUSCA E FILTROS
 ═══════════════════════════════════════ */
-function applyFilters({ animate = false } = {}) {
-  const term = state.searchTerm
+// Remove acentos e aproxima grafias de mesmo som (w→v, y→i, k→c, ph→f, th→t, z→s, letras dobradas)
+function normalizeSearch(str) {
+  return str
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ph/g, 'f')
+    .replace(/th/g, 't')
+    .replace(/w/g, 'v')
+    .replace(/y/g, 'i')
+    .replace(/k/g, 'c')
+    .replace(/z/g, 's')
+    .replace(/([a-z])\1+/g, '$1')
+}
 
-  state.filteredRows = state.allRows.filter(row => {
-    if (term) {
-      const nome = (row[CONFIG.SEARCH_COL] || '')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-      if (!nome.includes(term)) return false
+// Menor distância de edição (com transposição) entre `term` e qualquer prefixo de `word`
+function prefixEditDistance(term, word) {
+  const m = term.length
+  const n = word.length
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)])
+  for (let j = 1; j <= n; j++) d[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = term[i - 1] === word[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+      if (i > 1 && j > 1 && term[i - 1] === word[j - 2] && term[i - 2] === word[j - 1])
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
     }
+  }
+  return Math.min(...d[m])
+}
+
+// Erros tolerados por palavra digitada: curtas exigem exatidão
+function maxTypos(len) {
+  if (len <= 3) return 0
+  if (len <= 7) return 1
+  return 2
+}
+
+// Cada palavra digitada precisa casar (com tolerância) com o início de alguma palavra do nome
+function fuzzyMatch(termWords, nome) {
+  const nameWords = nome.split(/\s+/).filter(Boolean)
+  return termWords.every(tw => {
+    const limit = maxTypos(tw.length)
+    return nameWords.some(nw =>
+      nw.startsWith(tw) || (limit > 0 && prefixEditDistance(tw, nw) <= limit)
+    )
+  })
+}
+
+function applyFilters({ animate = false } = {}) {
+  const term = normalizeSearch(state.searchTerm)
+  const termWords = term.split(/\s+/).filter(Boolean)
+
+  const exact = []
+  const fuzzy = []
+
+  state.allRows.forEach(row => {
     for (const [col, val] of Object.entries(state.filters)) {
       if (!val) continue
       const cellVal = (row[col] || '').toLowerCase()
       // DATA: busca parcial (contém)
       if (col === 'DATA') {
-        if (!cellVal.includes(val.toLowerCase())) return false
+        if (!cellVal.includes(val.toLowerCase())) return
       } else {
-        if (cellVal !== val.toLowerCase()) return false
+        if (cellVal !== val.toLowerCase()) return
       }
     }
-    return true
+    if (!term) return exact.push(row)
+    const nome = normalizeSearch(row[CONFIG.SEARCH_COL] || '')
+    if (nome.includes(term)) exact.push(row)
+    else if (fuzzyMatch(termWords, nome)) fuzzy.push(row)
   })
+
+  // Correspondências exatas primeiro, aproximadas depois
+  state.filteredRows = exact.concat(fuzzy)
 
   renderCards({ animate })
   updateStatus()
