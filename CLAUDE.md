@@ -2,78 +2,43 @@
 
 ## O que é o projeto
 
-PWA mobile-first para consulta de lotes de café. Lê dados do Google Sheets via API pública (sem autenticação OAuth). O usuário configura o ID da planilha e a API Key pelo painel de configurações (⚙️); as credenciais ficam salvas no `localStorage` do dispositivo.
+PWA mobile-first para consulta de lotes de café. Lê dados do Google Sheets via API pública (API Key, sem OAuth). O ID da planilha e a API Key são configurados no app (⚙️) e ficam no `localStorage` do dispositivo. Publicado pelo GitHub Pages em `provacafe-consulta.rildo.dev`.
 
-## Arquitetura
+## Documentação — ler antes de mexer
 
-Vanilla JS, HTML e CSS puros — **sem build, sem bundler, sem dependências npm**. Tudo roda diretamente no browser. Não criar `package.json` nem ferramentas de build.
+O contexto completo está em [`docs/`](docs/README.md):
 
-```
-index.html    — estrutura e modais (detalhes + configuração)
-script.js     — toda a lógica (~500 linhas)
-styles.css    — estilos
-sw.js         — service worker (cache offline)
-manifest.json — configuração do PWA
-favicon.svg   — ícone
-```
+- [docs/arquitetura.md](docs/arquitetura.md) — arquivos, fluxo de dados, chamadas à API, service worker
+- [docs/funcionalidades.md](docs/funcionalidades.md) — comportamento atual e regras de negócio (busca, filtros, cores de BEBIDA, cópia, selo "Separar", offline)
+- [docs/planilha.md](docs/planilha.md) — colunas esperadas e formatação lida (negrito)
+- [docs/decisoes.md](docs/decisoes.md) — decisões tomadas, com data e motivo
+- [docs/fluxo-de-trabalho.md](docs/fluxo-de-trabalho.md) — branch, teste local, publicação
 
-## Estrutura esperada da planilha
+## Regras
 
-A primeira linha da aba é o cabeçalho. Colunas relevantes (todas em maiúsculas após normalização):
+### Manter a documentação atualizada
+- **Toda modificação no app atualiza os arquivos de `docs/` afetados**, no mesmo trabalho e antes de propor o commit. Decisões novas entram no topo de `docs/decisoes.md`.
+- Os documentos descrevem o **estado atual**; histórico só em `docs/decisoes.md`.
+- **Reorganizar de tempos em tempos**, quando necessário: arquivo passando de ~300 linhas, informação repetida entre arquivos, ou algo descrito que não existe mais no código. Remover o obsoleto, juntar/dividir arquivos e resumir decisões antigas. Avisar o usuário quando fizer uma reorganização.
+- Não repetir neste `CLAUDE.md` o que já está em `docs/`.
 
-| Coluna   | Uso                                              |
-|----------|--------------------------------------------------|
-| `NOME`   | Campo de busca principal (`CONFIG.SEARCH_COL`)   |
-| `DATA`   | Filtro por texto parcial (ex: `01/2025`)         |
-| `ENTREGA`| Chip especial — só aparece se tiver valor        |
-| `SCS`    | Quantidade de sacas                              |
-| `BEBIDA` | Código da bebida (ver regra abaixo)              |
-| `CATA`   | Nota de catação                                  |
-| `UMID.`  | Umidade                                          |
-| `17/18`  | Peneira                                          |
+### Arquitetura
+Vanilla JS, HTML e CSS puros — **sem build, sem bundler, sem dependências npm**. Não criar `package.json` nem ferramentas de build.
 
-Para adicionar ou remover colunas visíveis no card edite `CONFIG.CARD_VISIBLE_COLS` em `script.js`.  
-Para alterar as colunas dos filtros edite `CONFIG.FILTER_COLS`.
-
-## Regra de cores do campo BEBIDA
-
-Função `getBebidaColorClass(val)` — analisa apenas a **primeira palavra** do valor, remove dígitos e verifica as letras restantes (prioridade de cima para baixo):
-
-| Letra presente | Classe CSS       | Cor visual |
-|----------------|------------------|------------|
-| `B`            | `bebida-red`     | Vermelho   |
-| `L` (sem `B`)  | `bebida-yellow`  | Amarelo    |
-| `R` (sem `B` nem `L`) | `bebida-green` | Verde |
-
-Exemplos: `B` → vermelho · `RL1` → amarelo (tem L) · `R1L` → amarelo · `R` → verde · `RL1B` → vermelho (B tem prioridade).
-
-## Regra de formatação ao copiar (BEBIDA)
-
-Função `formatBebidaForCopy(val)` — usa a mesma regra de cores para montar o texto copiado:
-
-| Cor      | Prefixo       | Exemplo entrada | Exemplo saída        |
-|----------|---------------|-----------------|----------------------|
-| Verde    | `Duro`        | `R MOLE`        | `Duro Mole`          |
-| Amarelo  | `Duro Riado`  | `R1L FERMENTADO`| `Duro Riado Fermentado` |
-| Vermelho | `Rio`         | `RL1B`          | `Rio`                |
-
-A palavra após o espaço (se houver) é capitalizada e concatenada ao prefixo. Campos copiados pelo botão de cópia do card: Nome, Quantidade, Bebida, Cata, Umidade.
-
-## PWA — Service Worker
-
-Ao fazer qualquer alteração que deva ser percebida pelos usuários **sempre incrementar** a versão do cache em `sw.js`:
+### Service worker
+Toda alteração que os usuários devam receber **incrementa** a versão do cache em `sw.js`:
 
 ```js
 const CACHE_NAME = 'consulta-lotes-vXX'  // incrementar XX
 ```
 
-O service worker usa cache-first para estáticos e network-first para a API do Google Sheets.
+### Testar antes de publicar
+A `main` publica direto em produção. Trabalhar numa branch `feat/...`, testar em `http://localhost:8080` e só levar para a `main` com o OK do usuário (passo a passo em [docs/fluxo-de-trabalho.md](docs/fluxo-de-trabalho.md)).
 
-## Commits e Push
+### Commits e push
+**Nunca fazer commit nem push sem perguntar antes.** Apresentar o que foi feito e aguardar o usuário decidir.
 
-**Nunca fazer commit nem push sem perguntar antes.** Após concluir as alterações, apresentar o que foi feito e aguardar o usuário decidir o momento de commitar e publicar.
-
-Usar sempre o padrão **Conventional Commits**:
+Padrão **Conventional Commits**:
 
 ```
 feat:     nova funcionalidade
@@ -84,7 +49,3 @@ refactor: refatoração sem mudança de comportamento
 docs:     documentação
 perf:     melhoria de performance
 ```
-
-## Deploy
-
-O projeto é servido via GitHub Pages. O push para `main` já atualiza o site. Não há CI/CD adicional.
