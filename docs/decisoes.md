@@ -4,6 +4,14 @@ Entradas mais recentes no topo. Cada uma diz **o que** foi decidido e **por quê
 
 ---
 
+## 2026-11-06 — Repositório público (necessário para o GitHub Pages)
+
+- O site saiu do ar (404) e parou de receber builds depois que o repositório ficou privado: no plano gratuito, o Pages só funciona com repositório público.
+- Antes de tornar público, o histórico inteiro foi verificado: nenhuma API Key, ID de planilha, token ou dado de cliente (só marcadores de exemplo). O único dado pessoal visível é o e-mail do autor nos commits.
+- Alternativas descartadas: GitHub Pro (pago) ou hospedar em outro serviço.
+- **Consequência:** nunca commitar credenciais ou dados da planilha; tudo que está no repositório (inclusive `docs/`) fica público e é servido pelo site.
+- Recomendado ao usuário: restringir a API Key no Google Cloud à Sheets API e aos referenciadores do domínio e de `localhost:8080`.
+
 ## 2026-11-06 — Documentação em `docs/` mantida a cada mudança
 
 - Criada a pasta `docs/` com arquitetura, funcionalidades, planilha, decisões e fluxo de trabalho.
