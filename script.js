@@ -156,12 +156,51 @@ async function loadSheetData(sheetTitle) {
       })
       return obj
     })
+
+    // Segunda chamada: negrito da coluna NOME (falha não bloqueia os cards)
+    const nameIdx = state.headers.indexOf(CONFIG.SEARCH_COL)
+    if (nameIdx >= 0) {
+      try {
+        const boldRows = await loadBoldColumn(sheetTitle, nameIdx)
+        state.allRows.forEach((obj, i) => {
+          obj[BOLD_KEY] = boldRows[i + 1] === true
+        })
+      } catch (e) {
+        console.warn('Não foi possível ler o negrito da coluna NOME:', e)
+      }
+    }
   }
 
   state.filters = {}
   state.searchTerm = searchInput.value.trim()
   buildFilterUI()
   applyFilters({ animate: true })
+}
+
+/* ── Negrito da coluna NOME ──
+   Retorna um array indexado pela linha da planilha (0 = cabeçalho)
+   com true quando a célula está em negrito. */
+const BOLD_KEY = '__bold'
+
+function colIndexToLetter(idx) {
+  let s = ''
+  for (let n = idx + 1; n > 0; n = Math.floor((n - 1) / 26)) {
+    s = String.fromCharCode(65 + ((n - 1) % 26)) + s
+  }
+  return s
+}
+
+async function loadBoldColumn(sheetTitle, colIdx) {
+  const cfg = getSavedConfig()
+  const col = colIndexToLetter(colIdx)
+  const range = encodeURIComponent(`'${sheetTitle.replace(/'/g, "''")}'!${col}:${col}`)
+  const fields = encodeURIComponent('sheets.data.rowData.values.effectiveFormat.textFormat.bold')
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.SPREADSHEET_ID}?key=${cfg.API_KEY}&ranges=${range}&includeGridData=true&fields=${fields}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const data = await res.json()
+  const rowData = data?.sheets?.[0]?.data?.[0]?.rowData || []
+  return rowData.map(r => r?.values?.[0]?.effectiveFormat?.textFormat?.bold === true)
 }
 
 /* ═══════════════════════════════════════
@@ -457,6 +496,15 @@ function renderCards({ animate = false } = {}) {
     const name = document.createElement('div')
     name.className = 'card-name'
     name.textContent = row[CONFIG.SEARCH_COL] || '(sem nome)'
+
+    // Selo "Separar": só para entrega com nome em negrito na planilha
+    if (row['ENTREGA'] && row[BOLD_KEY]) {
+      const badge = document.createElement('span')
+      badge.className = 'badge-separar'
+      badge.textContent = '⚠ Separar'
+      name.appendChild(document.createTextNode(' '))
+      name.appendChild(badge)
+    }
 
     const copyBtn = document.createElement('button')
     copyBtn.className = 'btn-copy'
