@@ -154,6 +154,25 @@ body {
 /* ── SHEET TABS ── */
 .sheet-selector-wrap { display: flex; flex-direction: column; gap: 5px; }
 
+.sheet-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.last-updated {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.last-updated.is-offline {
+  color: var(--bebida-yellow-text);
+  font-weight: 600;
+}
+
 .sheet-label {
   font-size: 10px;
   font-weight: 500;

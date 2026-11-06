@@ -142,6 +142,7 @@ async function loadSheetData(sheetTitle) {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
+  updateLastUpdated(res)
 
   const rows = data.values || []
   if (rows.length < 2) {
@@ -175,6 +176,27 @@ async function loadSheetData(sheetTitle) {
   state.searchTerm = searchInput.value.trim()
   buildFilterUI()
   applyFilters({ animate: true })
+}
+
+/* ── Última atualização ──
+   O service worker marca respostas vindas do cache com X-From-Cache
+   e guarda o horário da busca original em X-Cached-At. */
+function formatDateTime(d) {
+  const p = n => String(n).padStart(2, '0')
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+function updateLastUpdated(res) {
+  const el = $('lastUpdated')
+  if (!el) return
+  const fromCache = res.headers.get('X-From-Cache') === '1'
+  const cachedAt = res.headers.get('X-Cached-At')
+  const when = fromCache && cachedAt ? new Date(cachedAt) : new Date()
+  const stamp = isNaN(when) ? '' : formatDateTime(when)
+  el.textContent = fromCache
+    ? `Offline · dados de ${stamp || 'data desconhecida'}`
+    : `Atualizado em ${stamp}`
+  el.classList.toggle('is-offline', fromCache)
 }
 
 /* ── Negrito da coluna NOME ──
